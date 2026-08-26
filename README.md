@@ -14,10 +14,9 @@ pip install -r requirements.txt
 
 ## 本机运行
 
-在项目文件夹里执行：
+先进入本项目所在文件夹，再执行：
 
 ```powershell
-cd "c:\Users\15718\Desktop\决策器"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
