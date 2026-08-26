@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}首页 · 决策器{% endblock %}
+{% block subtitle %}{{ today_summary.date.strftime('%Y年%m月%d日') }}{% endblock %}
+{% block content %}
+<section class="hero-grid">
+  <article class="card stat-card">
+    <p class="stat-label">今日已花</p>
+    <p class="stat-number">{{ today_summary.total }} <span>元</span></p>
+    <p class="muted">{{ today_summary.count }} 笔</p>
+  </article>
+
+  <article class="card stat-card">
+    <p class="stat-label">本月 {{ month_summary.year }}年{{ month_summary.month }}月</p>
+    <p class="stat-number">{{ month_summary.total }} <span>/ {{ month_summary.budget }} 元</span></p>
+    <div class="budget-bar" aria-hidden="true">
+      <div class="budget-bar-fill {% if month_summary.over_budget %}is-over{% elif month_summary.tight %}is-tight{% endif %}"
+           style="width: {{ month_summary.bar_width }}%"></div>
+    </div>
+    {% if month_summary.over_budget %}
+      <p class="warn">已经超支 {{ -month_summary.remain }} 元，非必要消费建议先停。</p>
+    {% elif month_summary.tight %}
+      <p class="warn">预算只剩 {{ month_summary.remain }} 元（不到 20%）。</p>
+    {% else %}
+      <p class="muted">剩余 {{ month_summary.remain }} 元 · 已用 {{ month_summary.percent }}%</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="card">
+  <h2>记一笔</h2>
+  <form method="post" action="{{ url_for('create_expense') }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="home">
+    <label>
+      金额（元）
+      <input type="number" name="amount" inputmode="decimal" step="0.01" min="0.01" required placeholder="例如 18.5">
+    </label>
+    <fieldset class="chip-fieldset">
+      <legend>分类</legend>
+      <div class="chip-row">
+        {% for item in categories %}
+          <label class="chip">
+            <input type="radio" name="category" value="{{ item }}" {% if item == '餐饮' %}checked{% endif %}>
+            <span>{{ item }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <label>
+      日期
+      <input type="date" name="spent_on" value="{{ today_iso }}" required>
+    </label>
+    <label>
+      备注（可空）
+      <input type="text" name="note" maxlength="200" placeholder="午饭 / 地铁">
+    </label>
+    <button type="submit" class="btn btn-primary">保存</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="section-head">
+    <h2>今天的明细</h2>
+    <a href="{{ url_for('expenses') }}">看本月</a>
+  </div>
+  {% if today_summary.records %}
+    <ul class="record-list">
+      {% for item in today_summary.records %}
+        <li>
+          <div>
+            <strong>{{ item.category }}</strong>
+            <span class="muted">{{ item.note or '无备注' }}</span>
+          </div>
+          <span class="amount">{{ item.amount }} 元</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">今天还没有记账。买了东西就随手记一笔。</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}我的 · 决策器{% endblock %}
+{% block subtitle %}账号与预算{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>当前账号</h2>
+  <p class="lead">{{ current_user.email }}</p>
+  <p class="muted">手机、电脑用这个邮箱登录，看到的是同一本账。数据存在服务器数据库里，不是这台设备的本地文件。</p>
+</section>
+
+<section class="card">
+  <h2>月预算</h2>
+  <p class="muted">本月已花 {{ month_summary.total }} 元，剩余 {{ month_summary.remain }} 元。</p>
+  <form method="post" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>
+      每月预算（元）
+      <input type="number" name="monthly_budget" inputmode="decimal" step="0.01" min="0.01" required value="{{ month_summary.budget }}">
+    </label>
+    <button type="submit" class="btn btn-primary">保存预算</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>退出登录</h2>
+  <form method="post" action="{{ url_for('logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-ghost">退出</button>
+  </form>
+</section>
+
+<p class="muted footer-note">购买决策（AI 聊天）会在记账稳定之后再加。现在先把每天花了多少记清楚。</p>
+{% endblock %}

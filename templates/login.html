@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}登录 · 决策器{% endblock %}
+{% block subtitle %}登录后同步你的账本{% endblock %}
+{% block content %}
+<section class="auth-card">
+  <h1>登录</h1>
+  <p class="muted">手机和电脑打开同一个网址，用同一个邮箱即可看到同一本账。</p>
+  <form method="post" action="{{ url_for('login') }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>
+      邮箱
+      <input type="email" name="email" required autocomplete="username">
+    </label>
+    <label>
+      密码
+      <input type="password" name="password" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn btn-primary">登录</button>
+  </form>
+  <p class="muted center">还没有账号？<a href="{{ url_for('register') }}">注册</a></p>
+</section>
+{% endblock %}

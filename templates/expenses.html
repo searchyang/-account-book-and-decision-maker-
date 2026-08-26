@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}明细 · 决策器{% endblock %}
+{% block subtitle %}{{ month_summary.year }}年{{ month_summary.month }}月{% endblock %}
+{% block content %}
+<section class="card compact">
+  <form class="month-switch" method="get" action="{{ url_for('expenses') }}">
+    <label>
+      年份
+      <input type="number" name="year" value="{{ month_summary.year }}" min="2000" max="2100">
+    </label>
+    <label>
+      月份
+      <input type="number" name="month" value="{{ month_summary.month }}" min="1" max="12">
+    </label>
+    <button type="submit" class="btn btn-ghost">查看</button>
+  </form>
+  <p class="month-total">本月 {{ month_summary.total }} 元 · {{ month_summary.count }} 笔 · 预算 {{ month_summary.budget }} 元</p>
+</section>
+
+{% if month_summary.categories %}
+<section class="card">
+  <h2>分类</h2>
+  <ul class="category-list">
+    {% for name, value in month_summary.categories %}
+      <li>
+        <span>{{ name }}</span>
+        <span>{{ value }} 元</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>补记一笔</h2>
+  <form method="post" action="{{ url_for('create_expense') }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="expenses">
+    <label>
+      金额（元）
+      <input type="number" name="amount" inputmode="decimal" step="0.01" min="0.01" required>
+    </label>
+    <fieldset class="chip-fieldset">
+      <legend>分类</legend>
+      <div class="chip-row">
+        {% for item in categories %}
+          <label class="chip">
+            <input type="radio" name="category" value="{{ item }}" {% if item == '餐饮' %}checked{% endif %}>
+            <span>{{ item }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <label>
+      日期
+      <input type="date" name="spent_on" value="{{ today_iso }}" required>
+    </label>
+    <label>
+      备注（可空）
+      <input type="text" name="note" maxlength="200">
+    </label>
+    <button type="submit" class="btn btn-primary">保存</button>
+  </form>
+</section>
+
+{% if grouped %}
+  {% for group in grouped %}
+    <section class="card">
+      <h2>{{ group.day.strftime('%m月%d日') }}</h2>
+      <ul class="record-list">
+        {% for item in group.records %}
+          <li>
+            <div>
+              <strong>{{ item.category }}</strong>
+              <span class="muted">{{ item.note or '无备注' }}</span>
+            </div>
+            <div class="row-actions">
+              <span class="amount">{{ item.amount }} 元</span>
+              <form method="post" action="{{ url_for('remove_expense', expense_id=item.id) }}" onsubmit="return confirm('删除这一笔？');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="link-btn">删除</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+{% else %}
+  <section class="card">
+    <p class="empty">这个月还没有记录。</p>
+  </section>
+{% endif %}
+{% endblock %}
