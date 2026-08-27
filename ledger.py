@@ -7,8 +7,8 @@ from database import db
 from models import Expense, User
 
 
-def parse_amount(text):
-    """把表单里的金额转成两位小数。格式不对或小于等于 0 时返回 None。"""
+def parse_amount(text, allow_zero=False):
+    """把表单里的金额转成两位小数。支出和预算必须大于 0；现有总额允许填 0。"""
     if text is None:
         return None
     cleaned = str(text).strip().replace(",", "").replace("￥", "").replace("¥", "")
@@ -16,7 +16,10 @@ def parse_amount(text):
         amount = Decimal(cleaned).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         return None
-    if amount <= 0:
+    if allow_zero:
+        if amount < 0:
+            return None
+    elif amount <= 0:
         return None
     return amount
 
@@ -52,11 +55,18 @@ def add_expense(user_id, amount_text, category, note, date_text):
             spent_on=spent_on,
         )
         db.session.add(expense)
+        user = db.session.get(User, user_id)
+        if user is not None and user.cash_balance is not None:
+            user.cash_balance = (user.cash_balance - amount).quantize(Decimal("0.01"))
         db.session.commit()
     except Exception as error:
         db.session.rollback()
         return False, f"保存失败，请稍后重试。原因：{error}"
-    return True, f"已记账：{spent_on}  {category}  {amount} 元"
+    extra = ""
+    user = db.session.get(User, user_id)
+    if user is not None and user.cash_balance is not None:
+        extra = f"，现有总额 {user.cash_balance} 元"
+    return True, f"已记账：{spent_on}  {category}  {amount} 元{extra}"
 
 
 def delete_expense(user_id, expense_id):
@@ -65,6 +75,9 @@ def delete_expense(user_id, expense_id):
     if expense is None or expense.user_id != user_id:
         return False, "找不到这笔账，或无权删除。"
     try:
+        user = db.session.get(User, user_id)
+        if user is not None and user.cash_balance is not None:
+            user.cash_balance = (user.cash_balance + expense.amount).quantize(Decimal("0.01"))
         db.session.delete(expense)
         db.session.commit()
     except Exception as error:
@@ -150,7 +163,32 @@ def build_month_summary(user_id, year=None, month=None):
         "records": records,
         "categories": category_summary(records),
         "count": len(records),
+        "cash_balance": user.cash_balance if user else None,
     }
+
+
+def get_cash_balance(user_id):
+    user = db.session.get(User, user_id)
+    if user is None:
+        return None
+    return user.cash_balance
+
+
+def set_cash_balance(user_id, amount_text):
+    """登记或校正「现在手里有多少钱」。这是直接改总额，不会去加减历史账单。"""
+    amount = parse_amount(amount_text, allow_zero=True)
+    if amount is None:
+        return False, "现有金额必须是 0 或正数，例如 1500"
+    user = db.session.get(User, user_id)
+    if user is None:
+        return False, "找不到当前用户，请重新登录。"
+    try:
+        user.cash_balance = amount
+        db.session.commit()
+    except Exception as error:
+        db.session.rollback()
+        return False, f"保存现有金额失败：{error}"
+    return True, f"现有总额已设为 {amount} 元。之后每记一笔支出，这里会自动减少。"
 
 
 def set_monthly_budget(user_id, amount_text):

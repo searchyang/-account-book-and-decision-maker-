@@ -1,11 +1,30 @@
 {% extends "base.html" %}
 {% block title %}我的 · 决策器{% endblock %}
-{% block subtitle %}账号与预算{% endblock %}
+{% block subtitle %}账号与总额{% endblock %}
 {% block content %}
 <section class="card">
   <h2>当前账号</h2>
   <p class="lead">{{ current_user.email }}</p>
   <p class="muted">手机、电脑用这个邮箱登录，看到的是同一本账。数据存在服务器数据库里，不是这台设备的本地文件。</p>
+</section>
+
+<section class="card">
+  <h2>现有总额</h2>
+  <p class="muted">这是「现在手里有多少钱」。登记或校正后，首页会显示总额；之后每记一笔支出自动减少，删除一笔会加回来。</p>
+  {% if cash_balance is none %}
+    <p class="lead">还没有登记</p>
+  {% else %}
+    <p class="lead">当前 {{ cash_balance }} 元</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('update_cash_balance') }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="next" value="settings">
+    <label>
+      现有金额（元）
+      <input type="number" name="cash_balance" inputmode="decimal" step="0.01" min="0" required value="{{ cash_balance if cash_balance is not none else '' }}" placeholder="例如 1500">
+    </label>
+    <button type="submit" class="btn btn-primary">保存现有金额</button>
+  </form>
 </section>
 
 <section class="card">

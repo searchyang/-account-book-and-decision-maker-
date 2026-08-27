@@ -17,12 +17,14 @@ from auth_helpers import (
     verify_password,
 )
 from config import EXPENSE_CATEGORIES, SECRET_KEY, build_database_url
-from database import db
+from database import db, ensure_extra_columns
 from ledger import (
     add_expense,
     build_month_summary,
     build_today_summary,
     delete_expense,
+    get_cash_balance,
+    set_cash_balance,
     set_monthly_budget,
 )
 import models  # noqa: F401  导入模型后 create_all 才能建表
@@ -39,6 +41,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        ensure_extra_columns()
 
     @app.context_processor
     def inject_common():
@@ -85,7 +88,7 @@ def create_app():
                 flash(f"注册失败：{err}", "error")
                 return render_template("register.html")
             login_user(user)
-            flash("注册成功，已经登录。先设一下月预算也可以直接记账。", "ok")
+            flash("注册成功，已经登录。建议先登记现有多少钱。", "ok")
             return redirect(url_for("home"))
         return render_template("register.html")
 
@@ -120,6 +123,7 @@ def create_app():
             "home.html",
             today_summary=build_today_summary(user_id),
             month_summary=build_month_summary(user_id),
+            cash_balance=get_cash_balance(user_id),
             nav="home",
         )
 
@@ -157,6 +161,7 @@ def create_app():
             "expenses.html",
             month_summary=summary,
             grouped=grouped,
+            cash_balance=get_cash_balance(current_user_id()),
             nav="expenses",
         )
 
@@ -167,6 +172,20 @@ def create_app():
         ok, message = delete_expense(current_user_id(), expense_id)
         flash(message, "ok" if ok else "error")
         return redirect(url_for("expenses"))
+
+    @app.post("/cash-balance")
+    @login_required
+    def update_cash_balance():
+        check_csrf()
+        ok, message = set_cash_balance(
+            current_user_id(),
+            request.form.get("cash_balance"),
+        )
+        flash(message, "ok" if ok else "error")
+        next_page = request.form.get("next") or "home"
+        if next_page == "settings":
+            return redirect(url_for("settings"))
+        return redirect(url_for("home"))
 
     @app.route("/settings", methods=["GET", "POST"])
     @login_required
@@ -183,6 +202,7 @@ def create_app():
             "settings.html",
             nav="settings",
             month_summary=build_month_summary(current_user_id()),
+            cash_balance=get_cash_balance(current_user_id()),
         )
 
     return app

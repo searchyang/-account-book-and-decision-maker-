@@ -183,6 +183,18 @@ a {
   color: var(--accent);
 }
 
+.wallet-card {
+  background: #ecf6f3;
+}
+
+.wallet-number {
+  font-size: 40px;
+}
+
+.wallet-number.is-over {
+  color: var(--danger);
+}
+
 .hero-grid {
   display: grid;
   gap: 14px;

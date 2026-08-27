@@ -14,7 +14,7 @@
     </label>
     <button type="submit" class="btn btn-ghost">查看</button>
   </form>
-  <p class="month-total">本月 {{ month_summary.total }} 元 · {{ month_summary.count }} 笔 · 预算 {{ month_summary.budget }} 元</p>
+  <p class="month-total">现有总额 {% if cash_balance is none %}未登记{% else %}{{ cash_balance }} 元{% endif %} · 本月 {{ month_summary.total }} 元 · {{ month_summary.count }} 笔 · 预算 {{ month_summary.budget }} 元</p>
 </section>
 
 {% if month_summary.categories %}

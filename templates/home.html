@@ -2,6 +2,29 @@
 {% block title %}首页 · 决策器{% endblock %}
 {% block subtitle %}{{ today_summary.date.strftime('%Y年%m月%d日') }}{% endblock %}
 {% block content %}
+<section class="card wallet-card">
+  <p class="stat-label">现有总额</p>
+  {% if cash_balance is none %}
+    <p class="muted">先登记现在手里有多少钱，之后每记一笔支出，这里会自动减少。</p>
+    <form method="post" action="{{ url_for('update_cash_balance') }}" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="next" value="home">
+      <label>
+        现有金额（元）
+        <input type="number" name="cash_balance" inputmode="decimal" step="0.01" min="0" required placeholder="例如 1500">
+      </label>
+      <button type="submit" class="btn btn-primary">登记总额</button>
+    </form>
+  {% else %}
+    <p class="stat-number wallet-number {% if cash_balance < 0 %}is-over{% endif %}">{{ cash_balance }} <span>元</span></p>
+    {% if cash_balance < 0 %}
+      <p class="warn">总额已经是负数，说明记账支出超过了你登记的现有金额。</p>
+    {% else %}
+      <p class="muted">记一笔支出后会从这里扣。数错了可以到「我的」里校正。</p>
+    {% endif %}
+  {% endif %}
+</section>
+
 <section class="hero-grid">
   <article class="card stat-card">
     <p class="stat-label">今日已花</p>
